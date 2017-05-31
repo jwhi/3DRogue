@@ -1,0 +1,141 @@
+fileFormatVersion: 2
+guid: f655e3bccc1db8b4d947434ca3a0ed61
+timeCreated: 1493416580
+licenseType: Free
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: bottomStepTransform
+    100002: bottomStepTransform1
+    100004: group
+    100006: group1
+    100008: group2
+    100010: group3
+    100012: group4
+    100014: group5
+    100016: pasted__group
+    100018: pasted__group1
+    100020: pasted__group3
+    100022: pasted__pasted__group
+    100024: pasted__typeMesh1
+    100026: secondStepTransform
+    100028: sideWall
+    100030: sideWall 1
+    100032: //RootNode
+    100034: thirdStepTransform
+    100036: topStepTransform
+    100038: transform1
+    100040: transform2
+    100042: transform3
+    100044: transform4
+    100046: transform5
+    100048: typeMesh1
+    400000: bottomStepTransform
+    400002: bottomStepTransform1
+    400004: group
+    400006: group1
+    400008: group2
+    400010: group3
+    400012: group4
+    400014: group5
+    400016: pasted__group
+    400018: pasted__group1
+    400020: pasted__group3
+    400022: pasted__pasted__group
+    400024: pasted__typeMesh1
+    400026: secondStepTransform
+    400028: sideWall
+    400030: sideWall 1
+    400032: //RootNode
+    400034: thirdStepTransform
+    400036: topStepTransform
+    400038: transform1
+    400040: transform2
+    400042: transform3
+    400044: transform4
+    400046: transform5
+    400048: typeMesh1
+    2300000: bottomStepTransform1
+    2300002: pasted__typeMesh1
+    2300004: sideWall
+    2300006: sideWall 1
+    2300008: typeMesh1
+    3300000: bottomStepTransform1
+    3300002: pasted__typeMesh1
+    3300004: sideWall
+    3300006: sideWall 1
+    3300008: typeMesh1
+    4300000: bottomStepTransform1
+    4300002: typeMesh1
+    4300004: sideWall
+    4300006: sideWall
+    4300008: pasted__typeMesh1
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

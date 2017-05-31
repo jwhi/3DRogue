@@ -1,0 +1,159 @@
+fileFormatVersion: 2
+guid: f736e6fab3ab0004b893feae073648d1
+timeCreated: 1492432059
+licenseType: Free
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: group
+    100002: group1
+    100004: group2
+    100006: group3
+    100008: group4
+    100010: group5
+    100012: group6
+    100014: group7
+    100016: group8
+    100018: group9
+    100020: pasted__group
+    100022: pasted__group1
+    100024: pasted__group2
+    100026: pasted__group3
+    100028: pasted__group3 1
+    100030: pasted__group6
+    100032: pasted__pasted__group
+    100034: pasted__pasted__pasted__typeMesh1
+    100036: pasted__typeMesh1
+    100038: pasted__typeMesh1 1
+    100040: pasted__typeMesh1 2
+    100042: pasted__typeMesh1 3
+    100044: pCube1
+    100046: pCube2
+    100048: pCube3
+    100050: pCube4
+    100052: pCube5
+    100054: pCube6
+    100056: //RootNode
+    100058: transform1
+    100060: transform10
+    100062: transform11
+    100064: transform2
+    100066: transform3
+    100068: transform4
+    100070: transform5
+    100072: transform6
+    100074: transform7
+    100076: transform8
+    100078: transform9
+    400000: group
+    400002: group1
+    400004: group2
+    400006: group3
+    400008: group4
+    400010: group5
+    400012: group6
+    400014: group7
+    400016: group8
+    400018: group9
+    400020: pasted__group
+    400022: pasted__group1
+    400024: pasted__group2
+    400026: pasted__group3
+    400028: pasted__group3 1
+    400030: pasted__group6
+    400032: pasted__pasted__group
+    400034: pasted__pasted__pasted__typeMesh1
+    400036: pasted__typeMesh1
+    400038: pasted__typeMesh1 1
+    400040: pasted__typeMesh1 2
+    400042: pasted__typeMesh1 3
+    400044: pCube1
+    400046: pCube2
+    400048: pCube3
+    400050: pCube4
+    400052: pCube5
+    400054: pCube6
+    400056: //RootNode
+    400058: transform1
+    400060: transform10
+    400062: transform11
+    400064: transform2
+    400066: transform3
+    400068: transform4
+    400070: transform5
+    400072: transform6
+    400074: transform7
+    400076: transform8
+    400078: transform9
+    2300000: pCube6
+    3300000: pCube6
+    4300000: pCube6
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

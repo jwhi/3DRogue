@@ -1,0 +1,162 @@
+fileFormatVersion: 2
+guid: ea45335754e49854bbc2928c62c2efbd
+timeCreated: 1493339901
+licenseType: Free
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: Bars1
+    100002: Bars2
+    100004: Darkness
+    100006: Door
+    100008: //RootNode
+    100010: DoorKnobBack
+    100012: DoorKnobFront
+    100014: group
+    100016: group1
+    100018: group2
+    100020: group3
+    100022: group4
+    100024: pasted__group
+    100026: pasted__group1
+    100028: pasted__group2
+    100030: pasted__group3
+    100032: pasted__pasted__group
+    100034: pasted__pasted__group1
+    100036: pasted__pasted__group2
+    100038: pasted__pasted__pasted__group
+    100040: pasted__pasted__pasted__group1
+    100042: pasted__pasted__pasted__pasted__group
+    100044: pCube1
+    100046: pCube2
+    100048: pCube3
+    100050: pCube4
+    100052: pCube5
+    100054: pCube6
+    100056: transform1
+    100058: transform2
+    100060: transform3
+    100062: transform4
+    100064: transform5
+    100066: transform6
+    400000: Bars1
+    400002: Bars2
+    400004: Darkness
+    400006: Door
+    400008: //RootNode
+    400010: DoorKnobBack
+    400012: DoorKnobFront
+    400014: group
+    400016: group1
+    400018: group2
+    400020: group3
+    400022: group4
+    400024: pasted__group
+    400026: pasted__group1
+    400028: pasted__group2
+    400030: pasted__group3
+    400032: pasted__pasted__group
+    400034: pasted__pasted__group1
+    400036: pasted__pasted__group2
+    400038: pasted__pasted__pasted__group
+    400040: pasted__pasted__pasted__group1
+    400042: pasted__pasted__pasted__pasted__group
+    400044: pCube1
+    400046: pCube2
+    400048: pCube3
+    400050: pCube4
+    400052: pCube5
+    400054: pCube6
+    400056: transform1
+    400058: transform2
+    400060: transform3
+    400062: transform4
+    400064: transform5
+    400066: transform6
+    2300000: Bars1
+    2300002: Bars2
+    2300004: Darkness
+    2300006: Door
+    2300008: DoorKnobBack
+    2300010: DoorKnobFront
+    3300000: Bars1
+    3300002: Bars2
+    3300004: Darkness
+    3300006: Door
+    3300008: DoorKnobBack
+    3300010: DoorKnobFront
+    4300000: Door
+    4300002: Bars1
+    4300004: Bars2
+    4300006: DoorKnobFront
+    4300008: DoorKnobBack
+    4300010: Darkness
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

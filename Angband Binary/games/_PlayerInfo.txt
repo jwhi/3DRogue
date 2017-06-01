@@ -1,0 +1,4 @@
+Curr HP: 37
+Max HP: 37
+Player Level: 2
+Depth: 1

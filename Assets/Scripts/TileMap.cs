@@ -14,7 +14,7 @@ public class TileMap : MonoBehaviour {
     public string[] dungeonLayout;
     public TileType[] tileTypes;
 
-	public Tiles[,] tiles;
+	public Tile[,] tiles;
 	private Node[,] graph;
     
 	public int mapSizeX = 80;
@@ -42,12 +42,12 @@ public class TileMap : MonoBehaviour {
     }
     void Start()
     {
-        tiles = new Tiles[mapSizeX, mapSizeY];
+        tiles = new Tile[mapSizeX, mapSizeY];
         for (int x = 0; x < mapSizeX; x++)
         {
             for (int y = 0; y < mapSizeY; y++)
             {
-                tiles[x, y] = new Tiles();
+                tiles[x, y] = new Tile();
             }
         }
         //dungeonMap = new DungeonMap();
@@ -646,12 +646,12 @@ public class TileMap : MonoBehaviour {
 
         DeleteMapVisual();
 
-        tiles = new Tiles[mapSizeX, mapSizeY];
+        tiles = new Tile[mapSizeX, mapSizeY];
         for (int x = 0; x < mapSizeX; x++)
         {
             for (int y = 0; y < mapSizeY; y++)
             {
-                tiles[x, y] = new Tiles();
+                tiles[x, y] = new Tile();
             }
         }
 

@@ -4,514 +4,472 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 
-//using RogueSharpRLNetSamples.Core;
-//using RogueSharpRLNetSamples.Systems;
-//using RogueSharpRLNetSamples.Monsters;
-//using RogueSharpRLNetSamples;
+// Stairs x and y coordinate with bool if stairs up or stairs down
+public class Stairs { int X, Y; bool Up; }
 
-public class Stairs
-{
-    int x;
-    int y;
-}
+public class Door { public int X, Y; public bool IsOpen; public Door(int x, int y, bool isOpen) { X = x; Y = y; IsOpen = isOpen; } }
+
+/* PlayerInfo class stores information about the player that comes from
+ * the PlayerInfo file from Angband. Level is the character's level, depth
+ * is the current depth of the dungeon.
+ * CurrentHP and MaxHP will be used to affect visual appearance of character icon.
+ */
+public class PlayerInfo { public int CurrentHP, MaxHP, Level, Depth; }
 
 public class TileMapFile : MonoBehaviour
 {
-    public GameObject selectedUnit;
-    public string[] dungeonLayout;
-    public string[] tempdungeon;
-    public string[] minimapText;
-    public string[] lightingText;
-    public TileType[] tileTypes;
+    /*
+     * TileType data is stored in Unity scene. TileType class has tile name,
+     * Unity prefab to be displayed for tile, if the tile is able to be walked on by
+     * player which is not needed when reading data from Angband, Character to be
+     * displayed in the ASCII representation of the dungeon map, and color of mini
+     * map character. These values are kept in TileData enum as well to help readability
+     * 0: Cave floor
+     * 1: Wall
+     * 2: Door
+     * 3: Stairs up
+     * 4: Stairs down
+     * 5: Empty
+     */
+    public TileType[] TileTypes;
 
-    public Tiles[,] tiles;
+    /*
+     * Tile data is created and updated in this file. Tile data created based on
+     * DungeonMap, WindowMap, and LightingMap values.
+     * Tile variables are:
+     * int TileType: Index of Tile Data stored in TileTypes array. Based on information in DungeonMap and WindowMap
+     * bool InFOV: Tile is lit since in the player's FOV. Light information for that tile is 1 in LightingMap
+     * bool InWindow: Repaced IsExplored which was for when player has visited the tile before and should remain drawn. InWindow is set for tiles in Angband game window needed to be drawn
+     * bool IsDrawn: True if the tile is currently displayed on screen to prevent duplicate tiles. Only tiles in WindowMap are drawn.
+     */
+    public Tile[,] Tiles;
 
-    int mapSizeX = 80;
-    int mapSizeY = 45;
-    int maxRooms = 30;
-    int maxRoomSize = 5;
-    int minRoomSize = 3;
+    /*
+     * lastModified stores when all the files were last updated by Angband. Only updates
+     * information when files are updated.
+     */
+    private System.DateTime[] LastModified;
 
-    int mapLevel = 0;
+    /* Object in the scene with Player model is dragged here from Unity */
+    public GameObject PlayerObject;
 
-    private System.DateTime[] lastModified;
-    private string dungeonCharacterFile = @"Z:\angband\src\_dungeonCharacter.txt";
-    private string dungeonFloorCharacterFile = @"Z:\angband\src\_mapInfo.txt";
-    private string dungeonLightingFile = @"Z:\angband\src\_dungeonLighting.txt";
-    private string playerInfoFile = @"Z:\angband\src\_playerInfo.txt";
-    private string offsetFile = @"Z:\angband\src\_offsetFile.txt";
-    private string dungeonCharacterText;
-    private string dungeonFloorText;
-    private string dungeonLightingText;
-    private string playerInfoText;
-
-    private int ViewOffset_X;
-    private int ViewOffset_Y;
-
-    private bool FOV_CHANGED;
-
-    //private List<DungeonMap> dungeonMap;
+    /* Variable that stores that data saved in the PlayerObject's Unit script */
     private Unit player;
-    public Stairs stairsDown;
-    public Stairs stairsUp;
 
-    public EnemyType[] enemyTypes;
+    /*
+     * File locations for all the text files from Angband.
+     * Allow to be customized in future.
+     * OffsetFile stores where the WindowMap starts in relation to the DungeonMapFile
+     * Provided image in Notes folder ("Notes/Offset Explanation.png") that helps explain.
+     * Area outlined in blue is roughly what is stored by WindowMap
+     * Red Square in top left of blue outline is the location that is stored in the
+     * OffsetFile as x and y values where x is distance from left border of DungeonMap
+     * and y is the distance from the top of DungeonMap
+     */
+    private string DungeonMapFile = @"Z:\build\games\_MapInfo.txt";
+    private string WindowMapFile = @"Z:\build\games\_WindowMap.txt";
+    private string FeatureMapFile = @"Z:\build\games\_FeatureMap.txt";
+    private string LightingMapFile = @"Z:\build\games\_LightingMap.txt";
+    private string PlayerInfoFile = @"Z:\build\games\_PlayerInfo.txt";
+    private string OffsetFile = @"Z:\build\games\_OffsetFile.txt";
 
-    //private CommandSystem commandSystem;
+    /*
+     * Information read from Angband files stored here.
+     * These strings are split and are used to create the string arrays
+     * String arrays are what are used to render the map visual, but These
+     * strings are useful to check if a map content was updated or not.
+     * Angband creates files even if the content is the same so modified DateTime
+     * for the files can be different but content will be the same.
+     */
+    private string DungeonMapText;
+    private string WindowMapText;
+    private string FeatureMapText;
+    private string PlayerInfoText;
 
+    public string[] DungeonMap; // Full map of the dungeon floor from Angband
+    public string[] WindowMap; // Portion of the map displayed in Angband game window
+    public string[] FeatureMap; // Covers same area as WindowMap but includes icons for loot, player, and moster locations
+    public string[] LightingMap; // Lighting values for the potion of the map displayed in Angband game window
+
+    /*
+     * OffsetFile only keeps these two values in the file so there isn't a need to store
+     * the files contents in a string or a string[] like the rest of the files
+     */
+    private int WindowOffsetX;
+    private int WindowOffsetY;
+
+    private int MapSizeX;
+    private int MapSizeY;
+
+    private List<Door> Doors; // All the doors on the current map
+
+    /*
+    * Corresponds to layer values in Unity for the scene.
+    * FOV layer is lit with an Area light attatched to player so tiles within
+    * FOV are brighter than others. Discovered are still able to be seen in the
+    * scene but are lit only by the scene's ambient light. Undiscovered tiles are
+    * not seen by the main camera and are not drawn.
+    * An exception to Undiscovered layer not being drawn are enemies in original 3D Rogue project.
+    * Enemies are either in FOV or Undiscovered. Undiscovered enemies are still seen
+    * in the editor, but not seen in Game view.
+    */
     enum Layers : int { FOV = 9, Discovered, Undiscovered };
 
+    /*
+     * Files enum is used to increase readability of LastModified array
+     */
+    enum Files : int { DungeonMap = 0, WindowMap, FeatureMap, LightingMap, OffsetValues };
+
+    /*
+     * TileData enum will be used when assigned tile type to tiles array. Values for
+     * the different tile data are determined by their location in the TileType array
+     * that is defined in the Unity scene.
+     */
+    enum TileData : int { Floor = 0, Wall, Door, StairsUp, StairsDown, Empty };
+
+
+
+    /*
+     * Called when the game is first run, but may be able to just include in Start().
+     * Target Frame Rate is 60 since camera movement speed is based on framerate.
+     * Had troubles in Window builds of the game with camera movement being too
+     * quick from usability standpoint.
+     * I wanted the application to run in background since for the time being, game
+     * can only be controlled in Angband game window, so running in background
+     * allows us to see the scene updated while focused on Angband.
+     */
     void Awake()
     {
         Application.targetFrameRate = 60;
         Application.runInBackground = true;
     }
+
     void Start()
     {
-        lastModified = new System.DateTime[5];
-        FOV_CHANGED = false;
-        /*
-        lastModified[0] = File.GetLastWriteTime(dungeonCharacterFile);
-        lastModified[1] = File.GetLastWriteTime(dungeonFloorCharacterFile);
-        lastModified[2] = File.GetLastWriteTime(dungeonLightingFile);
-        lastModified[3] = File.GetLastWriteTime(playerInfoFile);
-        lastModified[4] = File.GetLastWriteTime(offsetFile);
+        player = PlayerObject.GetComponent<Unit>();
+        LastModified = new System.DateTime[5];
+        Doors = new List<Door>();
         
-        while (!IsFileReady(dungeonCharacterFile))
-        {
-
-        }
-        dungeonCharacterText = File.ReadAllText(dungeonCharacterFile);
-        while (!IsFileReady(dungeonFloorCharacterFile))
-        {
-
-        }
-        dungeonFloorText = File.ReadAllText(dungeonFloorCharacterFile);
-        while (!IsFileReady(dungeonLightingFile))
-        {
-
-        }
-        dungeonLightingText = File.ReadAllText(dungeonLightingFile);
-        while (!IsFileReady(playerInfoFile))
-        {
-
-        }
-        playerInfoText = File.ReadAllText(playerInfoFile);
-        while (!IsFileReady(offsetFile))
-        {
-
-        }
-        string[] offsetValues = File.ReadAllText(offsetFile).Split(new string[] { " " }, System.StringSplitOptions.None);
-        ViewOffset_X = int.Parse(offsetValues[0]);
-        ViewOffset_Y = int.Parse(offsetValues[1]);
-        Debug.Log(ViewOffset_X + " " + ViewOffset_Y);
-
-
-        dungeonLayout = dungeonFloorText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
-        mapSizeY = dungeonLayout.Length-1;
-        mapSizeX = dungeonLayout[0].Length - 1;
-
-        for (int i = 0; i < dungeonLayout.Length / 2; i++)
-        {
-            string tmp = dungeonLayout[i];
-            dungeonLayout[i] = dungeonLayout[dungeonLayout.Length - i - 1];
-            dungeonLayout[dungeonLayout.Length - i - 1] = tmp;
-        }
-        
-
-        minimapText = dungeonCharacterText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
-        
-        
-
-
-        for (int y = 0; y < minimapText.Length-1; y++)
-        {
-            for (int x = 0; x < minimapText[y].Length; x++)
-            {
-                if (minimapText[y][x] == '@')
-                {
-                    player.tileX = x + ViewOffset_X;
-                    player.tileY = dungeonLayout.Length - (ViewOffset_Y + y + 1);
-                    selectedUnit.transform.position = new Vector3(x + ViewOffset_X, 0, dungeonLayout.Length - (ViewOffset_Y + y +1));
-                }
-            }
-        }
-
-
-        tiles = new Tiles[mapSizeX, mapSizeY];
-        for (int x = 0; x < mapSizeX; x++)
-        {
-            for (int y = 0; y < mapSizeY; y++)
-            {
-                tiles[x, y] = new Tiles();
-            }
-        }
-        */
-        player = selectedUnit.GetComponent<Unit>();
         player.map = this;
-        CreateArrays();
-        GenerateMapData();
-        GenerateMapVisual();
     }
 
     void Update()
     {
-        if ((lastModified[0] != File.GetLastWriteTime(dungeonCharacterFile)) ||
-            (lastModified[1] != File.GetLastWriteTime(dungeonFloorCharacterFile)) ||
-            (lastModified[2] != File.GetLastWriteTime(dungeonLightingFile)) ||
-            (lastModified[3] != File.GetLastWriteTime(playerInfoFile)) ||
-            (lastModified[4] != File.GetLastWriteTime(offsetFile)))
+        if ((LastModified[(int)Files.DungeonMap] != File.GetLastWriteTime(DungeonMapFile)) ||
+            (LastModified[(int)Files.WindowMap] != File.GetLastWriteTime(WindowMapFile)) ||
+            (LastModified[(int)Files.FeatureMap] != File.GetLastWriteTime(FeatureMapFile)) ||
+            (LastModified[(int)Files.LightingMap] != File.GetLastWriteTime(PlayerInfoFile)) ||
+            (LastModified[(int)Files.OffsetValues] != File.GetLastWriteTime(OffsetFile)))
         {
-            CreateArrays();
-        }
-        if (FOV_CHANGED)
-        {
-            Debug.Log("FOV");
-            UpdateFOV();
+            CreateMapData(); // If any files have been modified, update the arrays that contain the file contents
+            GenerateMapVisual();
         }
     }
-
-    void CreateArrays ()
+    /*
+     * Parses the text files and stores them in the proper string array and string.
+     * DungeonMap needs to be saved first, then the offset values, then FeatureMap
+     * to determine which tiles to draw and their tile type. After features are stored
+     * into tiles array, we can place the player, loot, and other map data.
+     */
+    void CreateMapData()
     {
-        lastModified[0] = File.GetLastWriteTime(dungeonCharacterFile);
-        lastModified[1] = File.GetLastWriteTime(dungeonFloorCharacterFile);
-        lastModified[2] = File.GetLastWriteTime(dungeonLightingFile);
-        lastModified[3] = File.GetLastWriteTime(playerInfoFile);
-        lastModified[4] = File.GetLastWriteTime(offsetFile);
-
-        
-
-        
-        while (!IsFileReady(dungeonFloorCharacterFile)) { }
-        string tmpDungeonFloorText = File.ReadAllText(dungeonFloorCharacterFile);
-        if (tmpDungeonFloorText.CompareTo(dungeonFloorText) != 0)
+        if (IsFileReady(DungeonMapFile)) // If file is not currently being written to by Angband, read the file
         {
-            dungeonFloorText = tmpDungeonFloorText;
-            DeleteMapVisual();
-            dungeonLayout = dungeonFloorText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
-            
-            // dungeonLayout = flipArray(dungeonLayout);
-            
-            mapSizeY = dungeonLayout.Length - 1;
-            mapSizeX = dungeonLayout[mapSizeY-1].Length - 1;
+            LastModified[(int)Files.DungeonMap] = File.GetLastWriteTime(DungeonMapFile);
+            string tmp = File.ReadAllText(DungeonMapFile);
 
-            tiles = new Tiles[mapSizeX, mapSizeY];
-            for (int x = 0; x < mapSizeX; x++)
+            // Only update the tiles array if the map has changed
+            if (tmp.CompareTo(DungeonMapText) != 0)
             {
-                for (int y = 0; y < mapSizeY; y++)
+                DungeonMapText = tmp;
+                DeleteMapVisual();
+                DungeonMap = DungeonMapText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
+                MapSizeY = DungeonMap.Length; // Height of the map is the number of lines of the DungeonMapFile
+
+                // DungeonMap lines are different lengths for some reason. Find the longest and set that to the width of the map
+                MapSizeX = 0;
+                for (int i = 0; i < MapSizeY; i++)
                 {
-                    tiles[x, y] = new Tiles();
-                }
-            }
-        }
-        
-        // Player info has player stats
-        while (!IsFileReady(playerInfoFile)) { }
-        string tmpPlayerInfoText = File.ReadAllText(playerInfoFile);
-        if (tmpPlayerInfoText.CompareTo(playerInfoText) != 0)
-        {
-            playerInfoText = tmpPlayerInfoText;
-        }
-
-        // Offset file determines the location the local map relative to the floor map
-        while (!IsFileReady(offsetFile))
-        {
-
-        }
-        string[] offsetValues = File.ReadAllText(offsetFile).Split(new string[] { " " }, System.StringSplitOptions.None);
-        ViewOffset_X = int.Parse(offsetValues[0]);
-        ViewOffset_Y = int.Parse(offsetValues[1]);
-
-        // Just a small portion of the map that is displayed within the angband game window
-        while (!IsFileReady(dungeonCharacterFile)) { }
-        string tmpDungeonCharacterText = File.ReadAllText(dungeonCharacterFile);
-        if (tmpDungeonCharacterText.CompareTo(dungeonCharacterText) != 0)
-        {
-            dungeonCharacterText = tmpDungeonCharacterText;
-            minimapText = dungeonCharacterText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
-            // minimapText = flipArray(minimapText);
-
-            for (int y = 0; y < minimapText.Length - 1; y++)
-            {
-                for (int x = 0; x < minimapText[y].Length; x++)
-                {
-                    if (minimapText[y][x] == '@')
+                    if (MapSizeX < DungeonMap[i].Length)
                     {
-                        player.tileX = x + ViewOffset_X;
-                        player.tileY = dungeonLayout.Length - (ViewOffset_Y + y + 1);
-                        selectedUnit.transform.position = new Vector3(x + ViewOffset_X, 0, dungeonLayout.Length - (ViewOffset_Y + y + 1));
+                        MapSizeX = DungeonMap[i].Length;
+                    }
+                }
+
+                Tiles = new Tile[MapSizeX, MapSizeY];
+
+                for (int y = 0; y < MapSizeY; y++)
+                {
+                    for (int x = 0; x < MapSizeX; x++)
+                    {
+                        try
+                        {
+                            Tiles[x, y] = new Tile();
+                        }
+                        catch (System.IndexOutOfRangeException e)
+                        {
+                            Debug.Log(e.Message);
+                            // Set IndexOutOfRangeException to the new exception's InnerException.
+                            throw new System.ArgumentOutOfRangeException("index parameter is out of range.", e);
+                        }
+                    }
+                    
+                    // Dungeon Map rows are not even which causes some OutOfRangeExceptions on some rows of Tiles[,]
+                    for (int x = 0; x < DungeonMap[y].Length; x++) { 
+                        try
+                        {
+                            switch (DungeonMap[y][x])
+                            {
+                                case '.':
+                                    Tiles[x, y].TileType = (int)TileData.Floor;
+                                    break;
+                                case '#':
+                                    Tiles[x, y].TileType = (int)TileData.Wall;
+                                    break;
+                                case '%':
+                                    Tiles[x, y].TileType = (int)TileData.Wall; // used for ores in angband. Will be different tile type in future
+                                    break;
+                                case '+':
+                                    Tiles[x, y].TileType = (int)TileData.Door;
+                                    Doors.Add(new Door(x, y, false)); // + is a closed door
+                                    break;
+                                case '\'':
+                                    Tiles[x, y].TileType = (int)TileData.Door;
+                                    Doors.Add(new Door(x, y, true)); // ' is an open door
+                                    break;
+                                case '<':
+                                    Tiles[x, y].TileType = (int)TileData.StairsUp;
+                                    break;
+                                case '>':
+                                    Tiles[x, y].TileType = (int)TileData.StairsDown;
+                                    break;
+                                default:
+                                    Tiles[x, y].TileType = (int)TileData.Empty;
+                                    break;
+                            }
+                        }
+                        catch (System.IndexOutOfRangeException e)
+                        {
+                            Debug.Log(e.Message);
+                            // Set IndexOutOfRangeException to the new exception's InnerException.
+                            throw new System.ArgumentOutOfRangeException("index parameter is out of range.", e);
+                        }
                     }
                 }
             }
-
         }
 
-        // Lighting file determines what is in FOV
-        while (!IsFileReady(dungeonLightingFile)) { }
-        string tmpDungeonLightingText = File.ReadAllText(dungeonLightingFile);
-        if (tmpDungeonLightingText.CompareTo(dungeonLightingText) != 0)
+        if (IsFileReady(OffsetFile))
         {
-            dungeonLightingText = tmpDungeonLightingText;
-            lightingText = dungeonLightingText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
-            FOV_CHANGED = true;
+            string[] offsetValues = File.ReadAllText(OffsetFile).Split(new string[] { " " }, System.StringSplitOptions.None);
+            WindowOffsetX = int.Parse(offsetValues[0]);
+            WindowOffsetY = int.Parse(offsetValues[1]);
         }
-    }
 
-    void GenerateMapData()
-    {
-        System.Random rnd = new System.Random();
-        
-
-        for (int y = 0; y < dungeonLayout.Length-1; y++)
+        // Sets which tiles are to be drawn.
+        if (IsFileReady(WindowMapFile) && Tiles != null)
         {
-            for (int x = 0; x < dungeonLayout[y].Length-1; x++)
+            LastModified[(int)Files.WindowMap] = File.GetLastWriteTime(WindowMapFile);
+            string tmp = File.ReadAllText(WindowMapFile);
+
+            if (tmp.CompareTo(WindowMapText) != 0)
             {
-                switch (dungeonLayout[y][x])
+                WindowMapText = tmp;
+                WindowMap = WindowMapText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
+
+                for (int y = 0; y < MapSizeY; y++)
                 {
-                    case '#':
-                        tiles[x, y].tileType = 2;
-                        break;
-                    case '.':
-                        tiles[x, y].tileType = 0; //(rnd.Next(1, 100) > 30) ? 0 : 1;
-                        break;
-                    case '%':
-                        // tiles[x, y].tileType = 3; // outofpov
-                        tiles[x, y].tileType = 2; // used for ores in angband
-                        break;
-                    case '+':
-                        tiles[x, y].tileType = 4; // door
-                        break;
-                    case '<':
-                        tiles[x, y].tileType = 5; // stairs up
-                        break;
-                    case '>':
-                        tiles[x, y].tileType = 6; // stairs down
-                        break;
-                    default:
-                        tiles[x, y].tileType = 3; // Empty
-                        break;
-                }
-            }
-        }
-    }
-
-
-    public void GenerateMapVisual()
-    {
-
-        GenerateMapData();
-        //UpdatePlayerFieldOfView();
-
-        for (int x = 0; x < mapSizeX; x++) {
-            for (int y = 0; y < mapSizeY; y++) {
-                if (tiles[x,y].isExplored) {
-                    if (!(tiles[x, y].isDrawn))
+                    for (int x = 0; x < MapSizeX; x++)
                     {
-                        int worldX = x;
-                        int worldY = mapSizeY - y;
-
-                        TileType tt = tileTypes[tiles[x, y].tileType];
-                        GameObject go;
-                        tiles[x, y].isDrawn = true;
-
-                        if (tt.name == "Wall")
+                        try
                         {
-                            //go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(x, 1, y), Quaternion.identity);
-                            //SetLayerRecursively(go, (int)Layers.Undiscovered);
+                            Tiles[x, y].InWindow = false;
                         }
-                        else if (tt.name == "Floor")
+                        catch (System.IndexOutOfRangeException e)
                         {
-                            go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity);
+                            Debug.Log(e.Message);
+                            // Set IndexOutOfRangeException to the new exception's InnerException.
+                            throw new System.ArgumentOutOfRangeException("index parameter is out of range.", e);
                         }
-                        else if (tt.name == "Swamp") { go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity); SetLayerRecursively(go, (int)Layers.Discovered); }
-                        else if (tt.name == "Door")
-                        {
-                            go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity);
-                            //SetLayerRecursively(go, (int)Layers.Discovered);
-
-                            if ((tileTypes[tiles[x, y + 1].tileType].name == "Floor") && (tiles[x, y + 1].isExplored))
-                            {
-                                go.transform.Rotate(new Vector3(0, 0, 0));
-                            }
-                            else if ((tileTypes[tiles[x, y - 1].tileType].name == "Floor") && (tiles[x, y - 1].isExplored))
-                            {
-                                go.transform.Rotate(new Vector3(0, 180, 0));
-                            }
-                            else if ((tileTypes[tiles[x - 1, y].tileType].name == "Floor") && (tiles[x - 1, y].isExplored))
-                            {
-                                go.transform.Rotate(new Vector3(0, 270, 0));
-                            }
-                            else if ((tileTypes[tiles[x + 1, y].tileType].name == "Floor") && (tiles[x + 1, y].isExplored))
-                            {
-                                go.transform.Rotate(new Vector3(0, 90, 0));
-                            }
-                            else if (tileTypes[tiles[x, y + 1].tileType].name == "Wall" && tileTypes[tiles[x, y - 1].tileType].name == "Wall")
-                            {
-                                go.transform.Rotate(new Vector3(0, 90, 0));
-                            }
-                        }
-                        else if (tt.name == "StairsUp")
-                        {
-                            go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 1, worldY), Quaternion.identity);
-                            if ((tileTypes[tiles[x, y + 1].tileType].name == "Wall"))
-                            {
-                                go.transform.Rotate(new Vector3(0, 0, 0));
-                            }
-                            else if ((tileTypes[tiles[x, y - 1].tileType].name == "Wall"))
-                            {
-                                go.transform.Rotate(new Vector3(0, 180, 0));
-                            }
-                            else if ((tileTypes[tiles[x - 1, y].tileType].name == "Wall"))
-                            {
-                                go.transform.Rotate(new Vector3(0, 270, 0));
-                            }
-                            else if ((tileTypes[tiles[x + 1, y].tileType].name == "Wall"))
-                            {
-                                go.transform.Rotate(new Vector3(0, 90, 0));
-                            }
-                        }
-                        else if (tt.name == "StairsDown")
-                        {
-                            go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity);
-                        }
-
-
                     }
                 }
-                //ClickableTile ct = go.GetComponent<ClickableTile>();
-                //ct.tileX = x;
-                //ct.tileY = y;
-                //ct.map = this;
-                
-            }
-        }
-        /*
-        
-        
-        foreach (GameObject stairs in GameObject.FindGameObjectsWithTag("Stairs"))
-        {
-            int tileX = Mathf.RoundToInt(stairs.transform.position.x);
-            int tileY = Mathf.RoundToInt(stairs.transform.position.z);
 
-            if (tiles[tileX, tileY].inFOV)
-            {
-                SetLayerRecursively(stairs, (int)Layers.FOV);
-                //stairs.transform.GetChild(5).GetComponent<Light>().enabled = true;
-                stairs.GetComponentInChildren<Light>().enabled = true;
-            }
-            else
-            {
-                SetLayerRecursively(stairs, (int)Layers.Discovered);
-                //stairs.transform.GetChild(5).GetComponent<Light>().enabled = false;
-                stairs.GetComponentInChildren<Light>().enabled = false;
-            }
-        }
-
-        
-        foreach (GameObject door in GameObject.FindGameObjectsWithTag("Door"))
-        {
-            int tileX = Mathf.RoundToInt(door.transform.position.x);
-            int tileY = Mathf.RoundToInt(door.transform.position.z);
-
-            if (tiles[tileX, tileY].isExplored)
-            {
-                SetLayerRecursively(door, (int)Layers.Discovered);
-            }
-            if (tiles[tileX, tileY].inFOV)
-            {
-                SetLayerRecursively(door, (int)Layers.FOV);
-                Debug.Log("FOV");
-            }
-        }
-        /*
-        string miniMapString = "";
-        for (int y = 0; y < mapSizeY; y++)
-        {
-            for (int x = 0; x < mapSizeX; x++)
-            {
-                if (x == player.tileX && y == player.tileY)
+                for (int y = 0; y < WindowMap.Length; y++)
                 {
-                    miniMapString += "<color=#fcf3cf>@</color>";
+                    for (int x = 0; x < WindowMap[y].Length; x++)
+                    {
+                        if (WindowMap[y][x] != ' ')
+                        {
+                            try
+                            {
+                                Tiles[WindowOffsetX + x, WindowOffsetY + y].InWindow = true;
+                            }
+                            catch (System.IndexOutOfRangeException e)
+                            {
+                                Debug.Log(e.Message);
+                                // Set IndexOutOfRangeException to the new exception's InnerException.
+                                throw new System.ArgumentOutOfRangeException("index parameter is out of range.", e);
+                            }
+                        }
+                    }
                 }
-                else if (tiles[x, y].tileType == 3)
-                { // empty tyle
-                    miniMapString += ' ';
-                } else
+
+                // After InWindow is updated for all tiles, delete tiles that should no longer be rendered
+                DeleteOffWindowMapVisuals();
+            }
+        }
+
+        if (IsFileReady(FeatureMapFile))
+        {
+            LastModified[(int)Files.FeatureMap] = File.GetLastWriteTime(FeatureMapFile);
+            string tmp = File.ReadAllText(FeatureMapFile);
+
+            if (tmp.CompareTo(FeatureMapText) != 0)
+            {
+                FeatureMapText = tmp;
+                FeatureMap = FeatureMapText.Split(new string[] { "\r\n", "\n" }, System.StringSplitOptions.None);
+
+                for (int y = 0; y < FeatureMap.Length; y++)
                 {
-                   miniMapString += "<color=#" + ColorUtility.ToHtmlStringRGBA(tileTypes[tiles[x, y].tileType].color) + ">" + tileTypes[tiles[x, y].tileType].Character + "</color>";
+                    for (int x = 0; x < FeatureMap[y].Length; x++)
+                    {
+                        if (FeatureMap[y][x] == '@') // Finds location of player on map and updates player
+                        {
+                            player.tileX = WindowOffsetX + x;
+                            player.tileY = WindowOffsetY + y;
+                        }
+                    }
                 }
             }
-            miniMapString += "\n";
         }
-        Text minimap = GameObject.Find("MiniMap").GetComponent<Text>();
-        minimap.text = miniMapString;
-        */
-        //GameObject[] dungeonTiles = GameObject.FindGameObjectsWithTag("DungeonColor");
-        /*
-        foreach (GameObject dungeonTile in dungeonTiles)
-        {
-
-            int tileX = Mathf.RoundToInt(dungeonTile.transform.position.x);
-            int tileY = Mathf.RoundToInt(dungeonTile.transform.position.z);
-           
-        }*/
     }
 
-    void UpdateFOV()
+    void GenerateMapVisual()
     {
-        // Called when Lighting file is updated
-        // selectedUnit.transform.position = new Vector3(x + ViewOffset_X, 0, dungeonLayout.Length - (ViewOffset_Y + y + 1));
-        Debug.Log("updating from array");
-        for (int y = 0; y < minimapText.Length - 1; y++)
+        for (int x = 0; x < MapSizeX; x++)
         {
-            for (int x = 0; x < minimapText[y].Length && x < lightingText[y].Length; x++)
+            for (int y = 0; y < MapSizeY; y++)
             {
-                if (lightingText[y][x] == '1' && minimapText[y][x] == '.')
+                if (Tiles[x, y] != null)
                 {
-                    Debug.Log("Fov X: " + (x + ViewOffset_X) + " Fov Y: " + (y + ViewOffset_Y));
-                    tiles[x + ViewOffset_X, y + ViewOffset_Y].inFOV = true;
-                    tiles[x + ViewOffset_X, y + ViewOffset_Y].isExplored = true;
-                }
-                else if (lightingText[y][x] == '8' && minimapText[y][x] != ' ')
-                {
-                    tiles[x + ViewOffset_X, y + ViewOffset_Y].inFOV = false;
-                    tiles[x + ViewOffset_X, y + ViewOffset_Y].isExplored = true;
+                    if (Tiles[x, y].InWindow)
+                    {
+                        if (!(Tiles[x, y].IsDrawn))
+                        {
+                            int worldX = x;
+                            int worldY = MapSizeY - y;
+                            TileType tt = TileTypes[Tiles[x, y].TileType];
+                            GameObject go;
+                            Tiles[x, y].IsDrawn = true;
+
+                            if (tt.name == "Floor")
+                            {
+                                go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity);
+                            }
+                            else if (tt.name == "Wall")
+                            {
+                                go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 1, worldY), Quaternion.identity);
+                            }
+                            else if (tt.name == "Door")
+                            {
+                                go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity);
+                                //SetLayerRecursively(go, (int)Layers.Discovered);
+
+                                // Rotates the door based on the floors and wall surrounding the door tile
+                                if ((TileTypes[Tiles[x, y + 1].TileType].name == "Floor") && (Tiles[x, y + 1].InWindow))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 0, 0));
+                                }
+                                else if ((TileTypes[Tiles[x, y - 1].TileType].name == "Floor") && (Tiles[x, y - 1].InWindow))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 180, 0));
+                                }
+                                else if ((TileTypes[Tiles[x - 1, y].TileType].name == "Floor") && (Tiles[x - 1, y].InWindow))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 270, 0));
+                                }
+                                else if ((TileTypes[Tiles[x + 1, y].TileType].name == "Floor") && (Tiles[x + 1, y].InWindow))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 90, 0));
+                                }
+                                else if (TileTypes[Tiles[x, y + 1].TileType].name == "Wall" && TileTypes[Tiles[x, y - 1].TileType].name == "Wall")
+                                {
+                                    go.transform.Rotate(new Vector3(0, 90, 0));
+                                }
+                            }
+                            else if (tt.name == "StairsUp")
+                            {
+                                go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 1, worldY), Quaternion.identity);
+                                if ((TileTypes[Tiles[x, y + 1].TileType].name == "Wall"))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 0, 0));
+                                }
+                                else if ((TileTypes[Tiles[x, y - 1].TileType].name == "Wall"))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 180, 0));
+                                }
+                                else if ((TileTypes[Tiles[x - 1, y].TileType].name == "Wall"))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 270, 0));
+                                }
+                                else if ((TileTypes[Tiles[x + 1, y].TileType].name == "Wall"))
+                                {
+                                    go.transform.Rotate(new Vector3(0, 90, 0));
+                                }
+                            }
+                            else if (tt.name == "StairsDown")
+                            {
+                                go = (GameObject)Instantiate(tt.tileVisualPrefab, new Vector3(worldX, 0, worldY), Quaternion.identity);
+                            }
+
+
+                        }
+                    }
                 }
             }
         }
-
-        Debug.Log("Going through game objects.");
-        foreach (GameObject dungeon in GameObject.FindGameObjectsWithTag("Dungeon"))
-        {
-            int tileX = Mathf.RoundToInt(dungeon.transform.position.x);
-            int tileY = Mathf.RoundToInt(dungeon.transform.position.z);
-            
-            if (tiles[tileX, tileY].inFOV)
-            {
-                Debug.Log("WHAAAAT");
-                SetLayerRecursively(dungeon, (int)Layers.FOV);
-            }
-            else
-            {
-                SetLayerRecursively(dungeon, (int)Layers.Discovered);
-            }
-        }
-
-        Debug.Log("FOV DONE");
-        FOV_CHANGED = false;
     }
 
-        // https://forum.unity3d.com/threads/change-gameobject-layer-at-run-time-wont-apply-to-child.10091/
-    void SetLayerRecursively(GameObject obj, int newLayer  )
+    public Vector3 TileCoordToWorldCoord(int x, int y)
     {
-        obj.layer = newLayer;
+        return new Vector3(x, 0, MapSizeY - y);
+    }
 
-        foreach (Transform child in obj.transform)
+    private void DeleteOffWindowMapVisuals()
+    {
+        foreach (GameObject oldDungeon in GameObject.FindGameObjectsWithTag("Dungeon"))
         {
-            SetLayerRecursively(child.gameObject, newLayer);
+            int tileX = Mathf.RoundToInt(oldDungeon.transform.position.x);
+            int tileY = Mathf.RoundToInt(MapSizeY - oldDungeon.transform.position.z);
+            if (!Tiles[tileX,tileY].InWindow)
+            {
+                Tiles[tileX, tileY].IsDrawn = false;
+                GameObject.Destroy(oldDungeon);
+            }
+        }
+        foreach (GameObject oldDoors in GameObject.FindGameObjectsWithTag("Door"))
+        {
+            int tileX = Mathf.RoundToInt(oldDoors.transform.position.x);
+            int tileY = Mathf.RoundToInt(MapSizeY - oldDoors.transform.position.z);
+            if (!Tiles[tileX, tileY].InWindow)
+            {
+                Tiles[tileX, tileY].IsDrawn = false;
+                GameObject.Destroy(oldDoors);
+            }
+        }
+        foreach (GameObject oldStairs in GameObject.FindGameObjectsWithTag("Stairs"))
+        {
+            int tileX = Mathf.RoundToInt(oldStairs.transform.position.x);
+            int tileY = Mathf.RoundToInt(MapSizeY - oldStairs.transform.position.z);
+            if (!Tiles[tileX, tileY].InWindow)
+            {
+                Tiles[tileX, tileY].IsDrawn = false;
+                GameObject.Destroy(oldStairs);
+            }
         }
     }
 
+    // Used only when you want to delete all game objects on the screen except for the player
     private void DeleteMapVisual()
     {
         foreach (GameObject oldDungeon in GameObject.FindGameObjectsWithTag("Dungeon"))
@@ -526,10 +484,7 @@ public class TileMapFile : MonoBehaviour
         {
             GameObject.Destroy(oldStairs);
         }
-        foreach (GameObject oldEnemies in GameObject.FindGameObjectsWithTag("Enemy"))
-        {
-            GameObject.Destroy(oldEnemies);
-        }
+
     }
 
     //http://stackoverflow.com/questions/1406808/wait-for-file-to-be-freed-by-process thanks gordon
@@ -556,16 +511,5 @@ public class TileMapFile : MonoBehaviour
         {
             return false;
         }
-    }
-
-    private string[] flipArray(string[] array)
-    {
-        for (int i = 0; i < array.Length / 2; i++)
-        {
-            string tmp = array[i];
-            array[i] = array[array.Length - i - 1];
-            array[array.Length - i - 1] = tmp;
-        }
-        return array;
     }
 }

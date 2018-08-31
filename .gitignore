@@ -29,3 +29,8 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Extra Files
+*.rar
+*.cpp
+*.txt
